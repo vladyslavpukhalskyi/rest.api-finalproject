@@ -12,7 +12,7 @@ public class MovieNotFoundException(MovieId id) : MovieException(id, $"Movie und
 
 public class MovieAlreadyExistsException(MovieId id) : MovieException(id, $"Movie already exists: {id}");
 
-public class MovieGenreNotFoundException(string genre) : MovieException(MovieId.Empty(), $"Genre '{genre}' not found");
+public class MovieGenreNotFoundException(GenreId genre) : MovieException(MovieId.Empty(), $"Genre '{genre}' not found");
 
 public class MovieUnknownException(MovieId id, Exception innerException)
     : MovieException(id, $"Unknown exception for the movie under id: {id}", innerException);

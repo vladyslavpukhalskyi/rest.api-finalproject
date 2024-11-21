@@ -1,18 +1,47 @@
 using System.Reflection;
-using Domain.Faculties;
-using Domain.Users;
+using Domain.Actors;
+using Domain.Directors;
+using Domain.Movies;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+public class ApplicationDbContext : DbContext
 {
-    public DbSet<User> Users { get; set; }
-    public DbSet<Faculty> Faculties { get; set; }
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-    protected override void OnModelCreating(ModelBuilder builder)
+    public DbSet<Actor> Actors { get; set; }
+    public DbSet<Director> Directors { get; set; }
+    public DbSet<Movie> Movies { get; set; }
+    public DbSet<Genre> Genres { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-        base.OnModelCreating(builder);
+        // Застосування конфігурацій з поточної збірки
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+        // Додаткові налаштування (якщо потрібно)
+        ConfigureRelations(modelBuilder);
+
+        base.OnModelCreating(modelBuilder);
+    }
+
+    private void ConfigureRelations(ModelBuilder modelBuilder)
+    {
+        // Налаштування зв'язків між таблицями
+        modelBuilder.Entity<Movie>()
+            .HasOne(m => m.Director)
+            .WithMany(d => d.Movies)
+            .HasForeignKey(m => m.DirectorId);
+
+        modelBuilder.Entity<Movie>()
+            .HasOne(m => m.Genre)
+            .WithMany(g => g.Movies)
+            .HasForeignKey(m => m.GenreId);
+
+        modelBuilder.Entity<Movie>()
+            .HasMany(m => m.Actors)
+            .WithMany(a => a.Movies)
+            .UsingEntity(j => j.ToTable("MovieActors"));
     }
 }

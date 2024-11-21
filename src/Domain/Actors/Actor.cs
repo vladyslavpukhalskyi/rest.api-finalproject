@@ -1,4 +1,6 @@
-﻿using Domain.Movies;
+﻿using System;
+using System.Collections.Generic;
+using Domain.Movies;
 
 namespace Domain.Actors
 {
@@ -7,9 +9,11 @@ namespace Domain.Actors
         public ActorId Id { get; }
         public string FirstName { get; private set; }
         public string LastName { get; private set; }
-        public DateTime BirthDate { get; private set; }
+        public DateTime BirthDate { get; private set; } // Залишено тільки BirthDate
 
         public List<Movie> Movies { get; private set; } = new List<Movie>();
+
+        public string Name => $"{FirstName} {LastName}";
 
         private Actor(ActorId id, string firstName, string lastName, DateTime birthDate)
         {

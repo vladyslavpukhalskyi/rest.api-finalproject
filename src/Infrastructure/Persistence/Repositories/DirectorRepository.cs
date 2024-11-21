@@ -32,7 +32,10 @@ public class DirectorRepository(ApplicationDbContext context) : IDirectorReposit
     {
         var entity = await context.Directors
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Name == name, cancellationToken);
+            .FirstOrDefaultAsync(
+                x => (x.FirstName + " " + x.LastName) == name, 
+                cancellationToken
+            );
 
         return entity == null ? Option.None<Director>() : Option.Some(entity);
     }

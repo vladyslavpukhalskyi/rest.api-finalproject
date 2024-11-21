@@ -1,5 +1,4 @@
 ﻿using Domain.Movies;
-using Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,14 +9,13 @@ public class GenreConfiguration : IEntityTypeConfiguration<Genre>
     public void Configure(EntityTypeBuilder<Genre> builder)
     {
         builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id).HasConversion(x => x.Value, x => new GenreId(x));
+
+        builder.Property(x => x.Id)
+            .HasConversion(x => x.Value, x => new GenreId(x));
 
         builder.Property(x => x.Name)
             .IsRequired()
             .HasColumnType("varchar(255)");
-
-        builder.Property(x => x.Description)
-            .HasColumnType("text");
 
         // Зв'язок з фільмами (один до багатьох)
         builder.HasMany(x => x.Movies)

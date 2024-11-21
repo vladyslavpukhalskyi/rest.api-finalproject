@@ -30,13 +30,16 @@ public class UpdateMovieCommandHandler(IMovieRepository movieRepository) : IRequ
     private async Task<Result<Movie, MovieException>> UpdateEntity(
         Movie entity,
         string title,
-        string genre,
+        string genre, // Оскільки genre — це рядок
         DateTime releaseDate,
         CancellationToken cancellationToken)
     {
         try
         {
-            entity.UpdateDetails(title, genre, releaseDate);
+            var genreId = new GenreId(Guid.Parse(genre)); // Перетворюємо genre (рядок) в GenreId
+
+            // Оновлюємо сутність з новими даними
+            entity.UpdateDetails(title, releaseDate.Year, genreId);
 
             return await movieRepository.Update(entity, cancellationToken);
         }

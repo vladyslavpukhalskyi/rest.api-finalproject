@@ -23,11 +23,13 @@ public class CreateMovieCommandHandler(
     {
         var genreId = new GenreId(request.GenreId);
 
+        // Отримуємо жанр за GenreId
         var genre = await genreRepository.GetById(genreId, cancellationToken);
 
         return await genre.Match<Task<Result<Movie, MovieException>>>( 
             async g =>
             {
+                // Перевірка на наявність фільму за його назвою
                 var existingMovie = await movieRepository.GetByTitle(request.Title, cancellationToken);
 
                 return await existingMovie.Match(
@@ -46,7 +48,7 @@ public class CreateMovieCommandHandler(
     {
         try
         {
-            var entity = Movie.New(MovieId.New(), title, director, genreId, releaseDate);
+            var entity = Movie.New(MovieId.New(), title, releaseDate.Year, genreId, new DirectorId(Guid.NewGuid())); // Встановлюємо GenreId
 
             return await movieRepository.Add(entity, cancellationToken);
         }

@@ -1,7 +1,6 @@
-﻿using Domain.Directors;
-using Domain.Actors;
-
-namespace Domain.Movies;
+﻿using Domain.Actors;
+using Domain.Directors;
+using Domain.Movies;
 
 public class Movie
 {
@@ -11,8 +10,8 @@ public class Movie
 
     public DateTime UpdatedAt { get; private set; }
 
-    public GenreId GenreId { get; }
-    public Genre? Genre { get; }
+    public GenreId GenreId { get; private set; } // GenreId should be updated
+    public Genre? Genre { get; } // This can be used for accessing the Genre object if needed
 
     public DirectorId DirectorId { get; }
     public Director? Director { get; }
@@ -32,12 +31,15 @@ public class Movie
     public static Movie New(MovieId id, string title, int releaseYear, GenreId genreId, DirectorId directorId)
         => new(id, title, releaseYear, DateTime.UtcNow, genreId, directorId);
 
-    public void UpdateDetails(string title, int releaseYear)
+    // Updated method to also handle genreId
+    public void UpdateDetails(string title, int releaseYear, GenreId genreId)
     {
         Title = title;
         ReleaseYear = releaseYear;
+        GenreId = genreId; // Оновлюємо GenreId
         UpdatedAt = DateTime.UtcNow;
     }
+
 
     public void AddActor(Actor actor)
     {

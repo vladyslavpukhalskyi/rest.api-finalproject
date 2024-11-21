@@ -20,10 +20,7 @@ public class ActorConfiguration : IEntityTypeConfiguration<Actor>
             .UsingEntity(j => j.ToTable("MovieActors"));
 
         // Додаткові властивості актора, наприклад, дата народження
-        builder.Property(x => x.DateOfBirth)
+        builder.Property(x => x.BirthDate) // Виправлено на BirthDate замість DateOfBirth
             .HasColumnType("date");
-
-        builder.Property(x => x.Nationality)
-            .HasColumnType("varchar(100)");
     }
 }

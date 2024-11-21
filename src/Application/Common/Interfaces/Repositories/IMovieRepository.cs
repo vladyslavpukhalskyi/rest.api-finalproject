@@ -10,8 +10,6 @@ public interface IMovieRepository
     Task<Movie> Delete(Movie movie, CancellationToken cancellationToken);
     Task<Option<Movie>> GetById(MovieId id, CancellationToken cancellationToken);
 
-    Task<Option<Movie>> GetByTitleAndReleaseYear(
-        string title,
-        int releaseYear,
-        CancellationToken cancellationToken);
+    // Метод тепер приймає лише title, а не GenreId
+    Task<Option<Movie>> GetByTitle(string title, CancellationToken cancellationToken);
 }

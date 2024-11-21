@@ -1,4 +1,5 @@
 ﻿using Domain.Directors;
+using Domain.Movies;
 using Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
