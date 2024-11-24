@@ -33,6 +33,11 @@ public class MovieRepository(ApplicationDbContext context) : IMovieRepository, I
             .ToListAsync(cancellationToken);
     }
 
+    Task<Movie> IMovieQueries.GetById(MovieId id, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<Option<Movie>> GetByTitle(string title, CancellationToken cancellationToken)
     {
         var entity = await context.Movies

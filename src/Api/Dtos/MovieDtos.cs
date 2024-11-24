@@ -1,8 +1,4 @@
-﻿using Domain.Movies;
-using Domain.Directors;
-using Domain.Actors;
-
-namespace Api.Dtos;
+﻿namespace Api.Dtos;
 
 public record MovieDto(
     Guid? Id,

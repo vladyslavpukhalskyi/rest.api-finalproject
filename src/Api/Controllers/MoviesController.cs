@@ -1,10 +1,8 @@
 ﻿using Api.Dtos;
-using Api.Modules.Errors;
 using Application.Movies.Commands;
 using Application.Movies.Exceptions;
 using Application.Common.Interfaces.Queries;
 using Microsoft.AspNetCore.Mvc;
-
 using Domain.Movies;
 using MediatR;
 
@@ -41,17 +39,23 @@ namespace Api.Controllers
         }
 
         // GET: api/movies/{id}
+        // GET: api/movies/{id}
+        // GET: api/movies/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
         {
             var movieId = new MovieId(id);
             var movie = await _movieQueries.GetById(movieId, cancellationToken);
 
-            return await movie.Match(
-                m => Ok(MovieDto.FromDomainModel(m)),
-                () => NotFound($"Movie with ID {id} not found.")
-            );
+            if (movie == null)
+            {
+                return NotFound($"Movie with ID {id} not found.");
+            }
+
+            return Ok(MovieDto.FromDomainModel(movie));
         }
+
+
 
         // POST: api/movies
         [HttpPost]
