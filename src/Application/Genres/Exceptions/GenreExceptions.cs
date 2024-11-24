@@ -1,16 +1,18 @@
-﻿namespace Application.Genres.Exceptions;
+﻿using Domain.Movies;
 
-public abstract class GenreException(Guid genreId, string message, Exception? innerException = null)
+namespace Application.Genres.Exceptions;
+
+public abstract class GenreException(GenreId id, string message, Exception? innerException = null)
     : Exception(message, innerException)
 {
-    public Guid GenreId { get; } = genreId;
+    public GenreId GenreId { get; } = id;
 }
 
-public class GenreNotFoundException(Guid genreId)
-    : GenreException(genreId, $"Genre under id: {genreId} not found");
+public class GenreNotFoundException(GenreId id)
+    : GenreException(id, $"Genre under id: {id} not found");
 
-public class GenreAlreadyExistsException(Guid genreId)
-    : GenreException(genreId, $"Genre already exists: {genreId}");
+public class GenreAlreadyExistsException(GenreId id)
+    : GenreException(id, $"Genre already exists: {id}");
 
-public class GenreUnknownException(Guid genreId, Exception innerException)
-    : GenreException(genreId, $"Unknown exception for the genre under id: {genreId}", innerException);
+public class GenreUnknownException(GenreId id, Exception innerException)
+    : GenreException(id, $"Unknown exception for the genre under id: {id}", innerException);

@@ -2,6 +2,7 @@
 using Application.Common.Interfaces.Repositories;
 using Application.Directors.Exceptions;
 using Domain.Directors;
+using Domain.Movies;
 using MediatR;
 
 namespace Application.Directors.Commands;

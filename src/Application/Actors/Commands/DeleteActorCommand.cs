@@ -4,39 +4,40 @@ using Application.Actors.Exceptions;
 using Domain.Actors;
 using MediatR;
 
-namespace Application.Actors.Commands;
-
-public record DeleteActorCommand : IRequest<Result<Actor, ActorException>>
+namespace Application.Actors.Commands
 {
-    public required Guid ActorId { get; init; }
-}
-
-public class DeleteActorCommandHandler(
-    IActorRepository actorRepository)
-    : IRequestHandler<DeleteActorCommand, Result<Actor, ActorException>>
-{
-    public async Task<Result<Actor, ActorException>> Handle(
-        DeleteActorCommand request,
-        CancellationToken cancellationToken)
+    public record DeleteActorCommand : IRequest<Result<Actor, ActorException>>
     {
-        var actorId = new ActorId(request.ActorId);
-
-        var existingActor = await actorRepository.GetById(actorId, cancellationToken);
-
-        return await existingActor.Match<Task<Result<Actor, ActorException>>>(
-            async a => await DeleteEntity(a, cancellationToken),
-            () => Task.FromResult<Result<Actor, ActorException>>(new ActorNotFoundException(actorId)));
+        public required Guid ActorId { get; init; }
     }
 
-    public async Task<Result<Actor, ActorException>> DeleteEntity(Actor actor, CancellationToken cancellationToken)
+    public class DeleteActorCommandHandler(
+        IActorRepository actorRepository)
+        : IRequestHandler<DeleteActorCommand, Result<Actor, ActorException>>
     {
-        try
+        public async Task<Result<Actor, ActorException>> Handle(
+            DeleteActorCommand request,
+            CancellationToken cancellationToken)
         {
-            return await actorRepository.Delete(actor, cancellationToken);
+            var actorId = new ActorId(request.ActorId);
+
+            var existingActor = await actorRepository.GetById(actorId, cancellationToken);
+
+            return await existingActor.Match<Task<Result<Actor, ActorException>>>(
+                async a => await DeleteEntity(a, cancellationToken),
+                () => Task.FromResult<Result<Actor, ActorException>>(new ActorNotFoundException(actorId)));
         }
-        catch (Exception exception)
+
+        public async Task<Result<Actor, ActorException>> DeleteEntity(Actor actor, CancellationToken cancellationToken)
         {
-            return new ActorUnknownException(actor.Id, exception);
+            try
+            {
+                return await actorRepository.Delete(actor, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                return new ActorUnknownException(actor.Id, exception);
+            }
         }
     }
 }

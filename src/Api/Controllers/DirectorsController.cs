@@ -1,7 +1,8 @@
 ﻿using Api.Dtos;
 using Api.Modules.Errors;
-using Application.Common.Interfaces.Queries;
 using Application.Directors.Commands;
+using Application.Common.Interfaces.Queries;
+using Domain.Directors;
 using Domain.Movies;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,6 @@ namespace Api.Controllers;
 [ApiController]
 public class DirectorsController(ISender sender, IDirectorQueries directorQueries) : ControllerBase
 {
-    // Отримати всіх режисерів
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<DirectorDto>>> GetAll(CancellationToken cancellationToken)
     {
@@ -21,7 +21,6 @@ public class DirectorsController(ISender sender, IDirectorQueries directorQuerie
         return entities.Select(DirectorDto.FromDomainModel).ToList();
     }
 
-    // Отримати режисера за ID
     [HttpGet("{directorId:guid}")]
     public async Task<ActionResult<DirectorDto>> Get([FromRoute] Guid directorId, CancellationToken cancellationToken)
     {
@@ -32,7 +31,6 @@ public class DirectorsController(ISender sender, IDirectorQueries directorQuerie
             () => NotFound());
     }
 
-    // Створити нового режисера
     [HttpPost]
     public async Task<ActionResult<DirectorDto>> Create([FromBody] DirectorDto request, CancellationToken cancellationToken)
     {
@@ -50,7 +48,6 @@ public class DirectorsController(ISender sender, IDirectorQueries directorQuerie
             e => e.ToObjectResult());
     }
 
-    // Оновити інформацію про режисера
     [HttpPut]
     public async Task<ActionResult<DirectorDto>> Update([FromBody] DirectorDto request, CancellationToken cancellationToken)
     {
@@ -59,9 +56,7 @@ public class DirectorsController(ISender sender, IDirectorQueries directorQuerie
             DirectorId = request.Id!.Value,
             FirstName = request.FirstName,
             LastName = request.LastName,
-            BirthDate = request.BirthDate,
-            Name = null,
-            Bio = null
+            BirthDate = request.BirthDate
         };
 
         var result = await sender.Send(input, cancellationToken);
@@ -71,7 +66,6 @@ public class DirectorsController(ISender sender, IDirectorQueries directorQuerie
             e => e.ToObjectResult());
     }
 
-    // Видалити режисера
     [HttpDelete("{directorId:guid}")]
     public async Task<ActionResult<DirectorDto>> Delete([FromRoute] Guid directorId, CancellationToken cancellationToken)
     {

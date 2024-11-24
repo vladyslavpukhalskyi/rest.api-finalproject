@@ -1,21 +1,33 @@
 ﻿using Domain.Actors;
 
-namespace Application.Actors.Exceptions;
-
-public abstract class ActorException(Guid actorId, string message, Exception? innerException = null)
-    : Exception(message, innerException)
+namespace Application.Actors.Exceptions
 {
-    public Guid ActorId { get; } = actorId;
+    public abstract class ActorException : Exception
+    {
+        public ActorId ActorId { get; }
+
+        protected ActorException(ActorId id, string message, Exception? innerException = null)
+            : base(message, innerException)
+        {
+            ActorId = id;
+        }
+    }
+
+    public class ActorNotFoundException : ActorException
+    {
+        public ActorNotFoundException(ActorId id)
+            : base(id, $"Actor with id: {id} not found") { }
+    }
+
+    public class ActorAlreadyExistsException : ActorException
+    {
+        public ActorAlreadyExistsException(ActorId id)
+            : base(id, $"Actor already exists: {id}") { }
+    }
+
+    public class ActorUnknownException : ActorException
+    {
+        public ActorUnknownException(ActorId id, Exception innerException)
+            : base(id, $"Unknown exception for actor with id: {id}", innerException) { }
+    }
 }
-
-public class ActorNotFoundException(Guid actorId) 
-    : ActorException(actorId, $"Actor with id: {actorId} not found");
-
-public class ActorAlreadyExistsException(Guid actorId) 
-    : ActorException(actorId, $"Actor already exists: {actorId}");
-
-public class ActorUnknownException(Guid actorId, Exception innerException)
-    : ActorException(actorId, $"Unknown exception for the actor with id: {actorId}", innerException);
-
-public class ActorNameInvalidException(string name) 
-    : ActorException(Guid.Empty, $"Invalid name for actor: '{name}'");

@@ -6,78 +6,83 @@ using Domain.Movies;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Api.Controllers;
-
-[Route("genres")]
-[ApiController]
-public class GenresController(ISender sender, IGenreQueries genreQueries) : ControllerBase
+namespace Api.Controllers
 {
-    // Отримати всі жанри
-    [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<GenreDto>>> GetAll(CancellationToken cancellationToken)
+    [Route("genres")]
+    [ApiController]
+    public class GenresController : ControllerBase
     {
-        var entities = await genreQueries.GetAll(cancellationToken);
+        private readonly ISender _sender;
+        private readonly IGenreQueries _genreQueries;
 
-        return entities.Select(GenreDto.FromDomainModel).ToList();
-    }
-
-    // Отримати жанр за ID
-    [HttpGet("{genreId:guid}")]
-    public async Task<ActionResult<GenreDto>> Get([FromRoute] Guid genreId, CancellationToken cancellationToken)
-    {
-        var entity = await genreQueries.GetById(new GenreId(genreId), cancellationToken);
-
-        return entity.Match<ActionResult<GenreDto>>(
-            g => GenreDto.FromDomainModel(g),
-            () => NotFound());
-    }
-
-    // Створити новий жанр
-    [HttpPost]
-    public async Task<ActionResult<GenreDto>> Create([FromBody] GenreDto request, CancellationToken cancellationToken)
-    {
-        var input = new CreateGenreCommand
+        public GenresController(ISender sender, IGenreQueries genreQueries)
         {
-            Name = request.Name
-        };
+            _sender = sender;
+            _genreQueries = genreQueries;
+        }
 
-        var result = await sender.Send(input, cancellationToken);
-
-        return result.Match<ActionResult<GenreDto>>(
-            g => GenreDto.FromDomainModel(g),
-            e => e.ToObjectResult());
-    }
-
-    // Оновити інформацію про жанр
-    [HttpPut]
-    public async Task<ActionResult<GenreDto>> Update([FromBody] GenreDto request, CancellationToken cancellationToken)
-    {
-        var input = new UpdateGenreCommand
+        [HttpGet]
+        public async Task<ActionResult<IReadOnlyList<GenreDto>>> GetAll(CancellationToken cancellationToken)
         {
-            GenreId = request.Id!.Value,
-            Name = request.Name
-        };
+            var genres = await _genreQueries.GetAll(cancellationToken);
+            var genreDtos = genres.Select(GenreDto.FromDomainModel).ToList();
+            return Ok(genreDtos);
+        }
 
-        var result = await sender.Send(input, cancellationToken);
-
-        return result.Match<ActionResult<GenreDto>>(
-            genre => GenreDto.FromDomainModel(genre),
-            e => e.ToObjectResult());
-    }
-
-    // Видалити жанр
-    [HttpDelete("{genreId:guid}")]
-    public async Task<ActionResult<GenreDto>> Delete([FromRoute] Guid genreId, CancellationToken cancellationToken)
-    {
-        var input = new DeleteGenreCommand
+        [HttpGet("{genreId:guid}")]
+        public async Task<ActionResult<GenreDto>> Get([FromRoute] Guid genreId, CancellationToken cancellationToken)
         {
-            GenreId = genreId
-        };
+            var genre = await _genreQueries.GetById(new GenreId(genreId), cancellationToken);
 
-        var result = await sender.Send(input, cancellationToken);
+            return genre.Match<ActionResult<GenreDto>>(
+                g => Ok(GenreDto.FromDomainModel(g)),
+                () => NotFound());
+        }
 
-        return result.Match<ActionResult<GenreDto>>(
-            g => GenreDto.FromDomainModel(g),
-            e => e.ToObjectResult());
+        [HttpPost]
+        public async Task<ActionResult<GenreDto>> Create([FromBody] GenreDto request, CancellationToken cancellationToken)
+        {
+            var input = new CreateGenreCommand
+            {
+                Name = request.Name
+            };
+
+            var result = await _sender.Send(input, cancellationToken);
+
+            return result.Match<ActionResult<GenreDto>>(
+                g => CreatedAtAction(nameof(Get), new { genreId = g.Id.Value }, GenreDto.FromDomainModel(g)),
+                e => e.ToObjectResult());
+        }
+
+        [HttpPut]
+        public async Task<ActionResult<GenreDto>> Update([FromBody] GenreDto request, CancellationToken cancellationToken)
+        {
+            var input = new UpdateGenreCommand
+            {
+                GenreId = request.Id,
+                Name = request.Name
+            };
+
+            var result = await _sender.Send(input, cancellationToken);
+
+            return result.Match<ActionResult<GenreDto>>(
+                g => Ok(GenreDto.FromDomainModel(g)),
+                e => e.ToObjectResult());
+        }
+
+        [HttpDelete("{genreId:guid}")]
+        public async Task<ActionResult<GenreDto>> Delete([FromRoute] Guid genreId, CancellationToken cancellationToken)
+        {
+            var input = new DeleteGenreCommand
+            {
+                GenreId = genreId
+            };
+
+            var result = await _sender.Send(input, cancellationToken);
+
+            return result.Match<ActionResult<GenreDto>>(
+                g => Ok(GenreDto.FromDomainModel(g)),
+                e => e.ToObjectResult());
+        }
     }
 }

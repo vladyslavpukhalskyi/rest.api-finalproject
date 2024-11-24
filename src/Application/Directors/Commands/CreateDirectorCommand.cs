@@ -2,6 +2,7 @@
 using Application.Common.Interfaces.Repositories;
 using Application.Directors.Exceptions;
 using Domain.Directors;
+using Domain.Movies;
 using MediatR;
 
 namespace Application.Directors.Commands;
@@ -14,16 +15,18 @@ public record CreateDirectorCommand : IRequest<Result<Director, DirectorExceptio
 }
 
 public class CreateDirectorCommandHandler(
-    IDirectorRepository directorRepository)
+    IDirectorRepository directorRepository) 
     : IRequestHandler<CreateDirectorCommand, Result<Director, DirectorException>>
 {
     public async Task<Result<Director, DirectorException>> Handle(CreateDirectorCommand request, CancellationToken cancellationToken)
     {
-        var existingDirector = await directorRepository.GetByFullName(request.FirstName, request.LastName, cancellationToken);
+        // Перевіряємо чи існує директор з таким ім'ям
+        var existingDirector = await directorRepository.GetByName($"{request.FirstName} {request.LastName}", cancellationToken);
 
         return await existingDirector.Match(
             d => Task.FromResult<Result<Director, DirectorException>>(new DirectorAlreadyExistsException(d.Id)),
-            async () => await CreateEntity(request.FirstName, request.LastName, request.BirthDate, cancellationToken));
+            async () => await CreateEntity(request.FirstName, request.LastName, request.BirthDate, cancellationToken)
+        );
     }
 
     private async Task<Result<Director, DirectorException>> CreateEntity(
@@ -34,9 +37,11 @@ public class CreateDirectorCommandHandler(
     {
         try
         {
-            var entity = Director.New(DirectorId.New(), firstName, lastName, birthDate);
+            // Створення нового директора
+            var director = Director.New(DirectorId.New(), firstName, lastName, birthDate);
 
-            return await directorRepository.Add(entity, cancellationToken);
+            // Додавання директора в репозиторій
+            return await directorRepository.Add(director, cancellationToken);
         }
         catch (Exception exception)
         {

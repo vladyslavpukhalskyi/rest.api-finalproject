@@ -1,6 +1,7 @@
 ﻿using Application.Common;
 using Application.Common.Interfaces.Repositories;
 using Application.Genres.Exceptions;
+using Application.Movies.Exceptions;
 using Domain.Movies;
 using MediatR;
 
@@ -17,6 +18,7 @@ public class CreateGenreCommandHandler(
 {
     public async Task<Result<Genre, GenreException>> Handle(CreateGenreCommand request, CancellationToken cancellationToken)
     {
+        // Перевірка на наявність жанру за його назвою
         var existingGenre = await genreRepository.GetByName(request.Name, cancellationToken);
 
         return await existingGenre.Match<Task<Result<Genre, GenreException>>>(
@@ -30,13 +32,14 @@ public class CreateGenreCommandHandler(
     {
         try
         {
-            var entity = Genre.New(GenreId.New(), name);
+            var genre = Genre.New(GenreId.New(), name);
 
-            return await genreRepository.Add(entity, cancellationToken);
+            return await genreRepository.Add(genre, cancellationToken);
         }
         catch (Exception exception)
         {
-            return new GenreUnknownException(exception);
+            // Pass a GenreId, either new or empty, when creating the GenreUnknownException
+            return new GenreUnknownException(GenreId.Empty(), exception); 
         }
     }
 }

@@ -1,90 +1,106 @@
 ﻿using Api.Dtos;
 using Api.Modules.Errors;
-using Application.Common.Interfaces.Queries;
 using Application.Movies.Commands;
-using Domain.Movies;
-using MediatR;
+using Application.Movies.Exceptions;
+using Application.Common.Interfaces.Queries;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Api.Controllers;
+using Domain.Movies;
+using MediatR;
 
-[Route("movies")]
-[ApiController]
-public class MoviesController(ISender sender, IMovieQueries movieQueries) : ControllerBase
+namespace Api.Controllers
 {
-    [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<MovieDto>>> GetAll(CancellationToken cancellationToken)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class MoviesController : ControllerBase
     {
-        var entities = await movieQueries.GetAll(cancellationToken);
+        private readonly IMovieQueries _movieQueries;
+        private readonly IMediator _mediator;
 
-        return entities.Select(MovieDto.FromDomainModel).ToList();
-    }
-
-    [HttpGet("{movieId:guid}")]
-    public async Task<ActionResult<MovieDto>> Get([FromRoute] Guid movieId, CancellationToken cancellationToken)
-    {
-        var entity = await movieQueries.GetById(new MovieId(movieId), cancellationToken);
-
-        return entity.Match<ActionResult<MovieDto>>(
-            m => MovieDto.FromDomainModel(m),
-            () => NotFound());
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<MovieDto>> Create([FromBody] MovieDto request, CancellationToken cancellationToken)
-    {
-        var input = new CreateMovieCommand
+        public MoviesController(IMovieQueries movieQueries, IMediator mediator)
         {
-            Title = request.Title,
-            ReleaseYear = request.ReleaseYear,
-            GenreId = request.GenreId,
-            DirectorId = request.DirectorId,
-            ActorIds = request.ActorIds,
-            Director = null,
-            ReleaseDate = default
-        };
+            _movieQueries = movieQueries;
+            _mediator = mediator;
+        }
 
-        var result = await sender.Send(input, cancellationToken);
-
-        return result.Match<ActionResult<MovieDto>>(
-            m => MovieDto.FromDomainModel(m),
-            e => e.ToObjectResult());
-    }
-
-    [HttpPut]
-    public async Task<ActionResult<MovieDto>> Update([FromBody] MovieDto request, CancellationToken cancellationToken)
-    {
-        var input = new UpdateMovieCommand
+        // GET: api/movies
+        [HttpGet]
+        public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
         {
-            MovieId = request.Id!.Value,
-            Title = request.Title,
-            ReleaseYear = request.ReleaseYear,
-            GenreId = request.GenreId,
-            DirectorId = request.DirectorId,
-            ActorIds = request.ActorIds,
-            Genre = null,
-            ReleaseDate = default
-        };
+            try
+            {
+                var movies = await _movieQueries.GetAll(cancellationToken);
+                var movieDtos = movies.Select(movie => MovieDto.FromDomainModel(movie)).ToList();
 
-        var result = await sender.Send(input, cancellationToken);
+                return Ok(movieDtos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
 
-        return result.Match<ActionResult<MovieDto>>(
-            movie => MovieDto.FromDomainModel(movie),
-            e => e.ToObjectResult());
-    }
-
-    [HttpDelete("{movieId:guid}")]
-    public async Task<ActionResult<MovieDto>> Delete([FromRoute] Guid movieId, CancellationToken cancellationToken)
-    {
-        var input = new DeleteMovieCommand
+        // GET: api/movies/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
         {
-            MovieId = movieId
-        };
+            var movieId = new MovieId(id);
+            var movie = await _movieQueries.GetById(movieId, cancellationToken);
 
-        var result = await sender.Send(input, cancellationToken);
+            return await movie.Match(
+                m => Ok(MovieDto.FromDomainModel(m)),
+                () => NotFound($"Movie with ID {id} not found.")
+            );
+        }
 
-        return result.Match<ActionResult<MovieDto>>(
-            m => MovieDto.FromDomainModel(m),
-            e => e.ToObjectResult());
+        // POST: api/movies
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateMovieCommand command, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(command, cancellationToken);
+
+            return result.Match(
+                movie => CreatedAtAction(nameof(GetById), new { id = movie.Id.Value }, MovieDto.FromDomainModel(movie)),
+                exception => exception switch
+                {
+                    MovieAlreadyExistsException ex => Conflict(ex.Message),
+                    MovieGenreNotFoundException ex => BadRequest(ex.Message),
+                    _ => StatusCode(500, "An unexpected error occurred.")
+                });
+        }
+
+        // PUT: api/movies/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMovieCommand command, CancellationToken cancellationToken)
+        {
+            if (id != command.MovieId)
+                return BadRequest("Movie ID mismatch.");
+
+            var result = await _mediator.Send(command, cancellationToken);
+
+            return result.Match(
+                movie => Ok(MovieDto.FromDomainModel(movie)),
+                exception => exception switch
+                {
+                    MovieNotFoundException ex => NotFound(ex.Message),
+                    _ => StatusCode(500, "An unexpected error occurred.")
+                });
+        }
+
+        // DELETE: api/movies/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+        {
+            var command = new DeleteMovieCommand { MovieId = id };
+            var result = await _mediator.Send(command, cancellationToken);
+
+            return result.Match(
+                movie => Ok(MovieDto.FromDomainModel(movie)),
+                exception => exception switch
+                {
+                    MovieNotFoundException ex => NotFound(ex.Message),
+                    _ => StatusCode(500, "An unexpected error occurred.")
+                });
+        }
     }
 }

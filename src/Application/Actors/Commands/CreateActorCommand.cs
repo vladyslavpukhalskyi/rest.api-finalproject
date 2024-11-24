@@ -4,46 +4,48 @@ using Application.Actors.Exceptions;
 using Domain.Actors;
 using MediatR;
 
-namespace Application.Actors.Commands;
-
-public record CreateActorCommand : IRequest<Result<Actor, ActorException>>
+namespace Application.Actors.Commands
 {
-    public required string FirstName { get; init; }
-    public required string LastName { get; init; }
-    public required DateTime BirthDate { get; init; }
-}
-
-public class CreateActorCommandHandler(
-    IActorRepository actorRepository)
-    : IRequestHandler<CreateActorCommand, Result<Actor, ActorException>>
-{
-    public async Task<Result<Actor, ActorException>> Handle(CreateActorCommand request, CancellationToken cancellationToken)
+    public record CreateActorCommand : IRequest<Result<Actor, ActorException>>
     {
-        // Перевірка, чи існує актор з таким самим ім'ям та прізвищем
-        var existingActor = await actorRepository.GetByFullName(request.FirstName, request.LastName, cancellationToken);
-
-        return await existingActor.Match(
-            actor => Task.FromResult<Result<Actor, ActorException>>(new ActorAlreadyExistsException(actor.Id)),
-            async () => await CreateEntity(request.FirstName, request.LastName, request.BirthDate, cancellationToken)
-        );
+        public required string FirstName { get; init; }
+        public required string LastName { get; init; }
+        public required DateTime BirthDate { get; init; }
     }
 
-    private async Task<Result<Actor, ActorException>> CreateEntity(
-        string firstName,
-        string lastName,
-        DateTime birthDate,
-        CancellationToken cancellationToken)
+    public class CreateActorCommandHandler(
+        IActorRepository actorRepository)
+        : IRequestHandler<CreateActorCommand, Result<Actor, ActorException>>
     {
-        try
+        public async Task<Result<Actor, ActorException>> Handle(CreateActorCommand request, CancellationToken cancellationToken)
         {
-            // Створення нового актора
-            var actor = Actor.New(ActorId.New(), firstName, lastName, birthDate);
+            // Check if the actor already exists by their full name
+            var existingActor = await actorRepository.GetByFullName(request.FirstName, request.LastName, cancellationToken);
 
-            return await actorRepository.Add(actor, cancellationToken);
+            return await existingActor.Match<Task<Result<Actor, ActorException>>>(
+                actor => Task.FromResult<Result<Actor, ActorException>>(new ActorAlreadyExistsException(actor.Id)),
+                async () => await CreateActorEntity(request.FirstName, request.LastName, request.BirthDate, cancellationToken)
+            );
         }
-        catch (Exception exception)
+
+        private async Task<Result<Actor, ActorException>> CreateActorEntity(
+            string firstName,
+            string lastName,
+            DateTime birthDate,
+            CancellationToken cancellationToken)
         {
-            return new ActorUnknownException(ActorId.Empty(), exception);
+            try
+            {
+                var actorId = ActorId.New();
+                var actor = Actor.New(actorId, firstName, lastName, birthDate);
+
+                // Add the actor to the repository
+                return await actorRepository.Add(actor, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                return new ActorUnknownException(ActorId.Empty(), exception);
+            }
         }
     }
 }
